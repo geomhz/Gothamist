@@ -11,7 +11,7 @@ from src.utils.interface import Interface
 from src.utils.webdriver_load import WebDriverLoad
 from src.utils.excel_file import ExcelFile
 from src.utils.img_directory import save_img_directory
-
+from src.configuration.config import WORKER_THREAD
 
 class ExtractNewsInfo:
     def __init__(self):
@@ -40,6 +40,8 @@ class ExtractNewsInfo:
                 EC.presence_of_element_located((By.XPATH, self.selectors['search']['search_button']))
             ).click()
 
+            return phrase
+
         except Exception as e:
             print(e)
 
@@ -63,14 +65,13 @@ class ExtractNewsInfo:
                 self.driver.execute_script("window.scrollTo(0, 0);")
                 break
 
-    def extract_news_data(self):
+    def extract_news_data(self, search_phrase):
         try:
-            # Recuperando os elementos
             titles = self.driver.find_elements(By.XPATH, self.selectors['card_news']['card_title'])
             descriptions = self.driver.find_elements(By.XPATH, self.selectors['card_news']['card_description'])
             picture_links = self.driver.find_elements(By.XPATH, self.selectors['card_news']['picture_link'])
 
-            with ThreadPoolExecutor(max_workers=5) as executor:
+            with ThreadPoolExecutor(max_workers=WORKER_THREAD) as executor:
                 futures = []
                 for idx, (title, description, picture_link) in enumerate(zip(titles, descriptions, picture_links)):
                     try:
@@ -81,13 +82,14 @@ class ExtractNewsInfo:
 
                         save_path = os.path.join(self.save_directory, img_name)
                         futures.append(executor.submit(self.download_image, picture_src, save_path))
+                        count_phrase = title_text.lower().count(search_phrase.lower()) + description_text.lower().count(search_phrase.lower())
 
                         self.excel_file.append_info(
                             title=title_text,
                             description=description_text,
                             picture_link=picture_src,
                             picture_name=img_name,
-                            count_phrase='-',
+                            count_phrase=count_phrase,
                             money='-',
                         )
                     except Exception as e:
@@ -114,7 +116,7 @@ class ExtractNewsInfo:
             print(f"Exception occurred while downloading {url}: {e}")
 
     def handle_news(self):
-        self.search_phrase(phrase='Real')
+        phrase_searched = self.search_phrase(phrase='Health')
         self.wait_load_news()
         self.load_more_news()
-        self.extract_news_data()
+        self.extract_news_data(search_phrase=phrase_searched)
