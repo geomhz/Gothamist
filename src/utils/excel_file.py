@@ -14,7 +14,7 @@ class ExcelFile():
 
         self.ws.append(headers)
 
-    def append_info(self, title, description, picture_link, picture_name, count_phrase, money):
+    def append_info(self, title, description, picture_link, picture_name, count_phrase, money, article_link):
 
         self.ws.append([
             title,
@@ -22,7 +22,8 @@ class ExcelFile():
             picture_link,
             picture_name,
             count_phrase,
-            money
+            money,
+            article_link
         ])
 
     def save_file(self):

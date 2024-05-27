@@ -12,3 +12,4 @@ card_news:
   card_title: "//*[@trackingcomponent='Search Results']//div[@class='h2']"
   card_description: "//*[@trackingcomponent='Search Results']//p"
   picture_link: "//*[@class='image-with-caption card-image w-full']//*[@class='image native-image prime-img-class']"
+  link_article: "//*[@class='//*[@class='image-with-caption card-image w-full']//a"

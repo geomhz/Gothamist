@@ -5,17 +5,16 @@ from concurrent.futures import ThreadPoolExecutor
 
 import requests
 import os
+import re
 
 from src.utils.selectors import selectors
-from src.utils.interface import Interface
 from src.utils.webdriver_load import WebDriverLoad
 from src.utils.excel_file import ExcelFile
-from src.utils.img_directory import save_img_directory
-from src.configuration.config import WORKER_THREAD
+from src.utils.picture_directory import save_img_directory
+from src.configuration.config import WORKER_THREAD, URL
 
 class ExtractNewsInfo:
     def __init__(self):
-        self.interface = Interface()
         self.webdriver = WebDriverLoad()
         self.excel_file = ExcelFile()
         self.save_directory = save_img_directory()
@@ -70,28 +69,37 @@ class ExtractNewsInfo:
             titles = self.driver.find_elements(By.XPATH, self.selectors['card_news']['card_title'])
             descriptions = self.driver.find_elements(By.XPATH, self.selectors['card_news']['card_description'])
             picture_links = self.driver.find_elements(By.XPATH, self.selectors['card_news']['picture_link'])
+            article_links = self.driver.find_elements(By.XPATH, self.selectors['card_news']['link_article'])
 
             with ThreadPoolExecutor(max_workers=WORKER_THREAD) as executor:
                 futures = []
-                for idx, (title, description, picture_link) in enumerate(zip(titles, descriptions, picture_links)):
+                for idx, (title, description, picture_link, article_link) in enumerate(zip(titles, descriptions, picture_links, article_links)):
                     try:
                         title_text = title.text
                         description_text = description.text
                         picture_src = picture_link.get_attribute('src')
-                        img_name = f"image_{idx + 1}.jpg"
-
-                        save_path = os.path.join(self.save_directory, img_name)
-                        futures.append(executor.submit(self.download_image, picture_src, save_path))
+                        article_href_parametrer = article_link.get_attribute('href')
                         count_phrase = title_text.lower().count(search_phrase.lower()) + description_text.lower().count(search_phrase.lower())
+
+                        picture_name = f"image_{idx + 1}.jpg"
+
+                        save_path = os.path.join(self.save_directory, picture_name)
+                        futures.append(executor.submit(self.download_image, picture_src, save_path))
+
+                        contains_money = self.contains_money(title_text=title_text, description_text=description_text)
+
+                        article_link = f"{URL}{article_href_parametrer}"
 
                         self.excel_file.append_info(
                             title=title_text,
                             description=description_text,
                             picture_link=picture_src,
-                            picture_name=img_name,
+                            picture_name=picture_name,
                             count_phrase=count_phrase,
-                            money='-',
+                            money=contains_money,
+                            article_link=article_link
                         )
+
                     except Exception as e:
                         print(f"Error processing card: {e}")
 
@@ -115,8 +123,19 @@ class ExtractNewsInfo:
         except Exception as e:
             print(f"Exception occurred while downloading {url}: {e}")
 
+    def contains_money(self, title_text, description_text):
+        money_regex = r"\$\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+\s(?:dollars|USD)"
+        
+        if re.search(money_regex, title_text):
+            return True
+        
+        if re.search(money_regex, description_text):
+            return True
+        
+        return False
+
     def handle_news(self):
-        phrase_searched = self.search_phrase(phrase='Health')
+        phrase_searched = self.search_phrase(phrase='Dollar')
         self.wait_load_news()
         self.load_more_news()
         self.extract_news_data(search_phrase=phrase_searched)
