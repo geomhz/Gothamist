@@ -1,0 +1,14 @@
+search:
+  search_button_main: "//*[@class='pi pi-search p-button-icon']"
+  search_field: "//form[@id='search']//input"
+  search_button: "//*[@id='search']//*[@type='button']"
+
+wait_loading:
+  wait_load_news: "//div[@class='h2']"
+  button_load_all_news: "//*[@id='resultList']//button[@aria-label='Load More']"
+
+card_news:
+  all_cards: "//*[@trackingcomponent='Search Results']"
+  card_title: "//*[@trackingcomponent='Search Results']//div[@class='h2']"
+  card_description: "//*[@trackingcomponent='Search Results']//p"
+  picture_link: "//*[@class='image-with-caption card-image w-full']//*[@class='image native-image prime-img-class']"
