@@ -9,7 +9,7 @@ class ExcelFile():
 
         headers = [
             "Title", "Description", "Picture Link", "Picture Name",
-            "Count Phrase", "Money"
+            "Count Phrase", "Money, Article Link"
         ]
 
         self.ws.append(headers)

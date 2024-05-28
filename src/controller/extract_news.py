@@ -24,7 +24,6 @@ class ExtractNewsInfo:
         self.wait2 = self.webdriver.wait2
         self.wait3 = self.webdriver.wait3
         self.driver = self.webdriver.driver
-
     def search_phrase(self, phrase):
         try:
             search_main_page = self.wait2.until(
@@ -88,8 +87,6 @@ class ExtractNewsInfo:
 
                         contains_money = self.contains_money(title_text=title_text, description_text=description_text)
 
-                        article_link = f"{URL}{article_href_parametrer}"
-
                         self.excel_file.append_info(
                             title=title_text,
                             description=description_text,
@@ -97,7 +94,7 @@ class ExtractNewsInfo:
                             picture_name=picture_name,
                             count_phrase=count_phrase,
                             money=contains_money,
-                            article_link=article_link
+                            article_link=article_href_parametrer
                         )
 
                     except Exception as e:
