@@ -52,6 +52,7 @@ class ExtractNewsInfo:
             try:
                 self.remove_newsletter()
                 load_more = self.browser.find_element(self.selectors['wait_loading']['button_load_all_news'])
+                self.remove_newsletter()
 
                 if load_more:
 
