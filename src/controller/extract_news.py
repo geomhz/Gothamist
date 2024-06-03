@@ -1,6 +1,3 @@
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
@@ -8,35 +5,27 @@ import os
 import re
 
 from src.utils.selectors import selectors
-from src.utils.webdriver_load import WebDriverLoad
+from src.utils.browser_load import LoadBrowser
 from src.utils.excel_file import ExcelFile
 from src.utils.picture_directory import save_img_directory
-from src.configuration.config import WORKER_THREAD, URL
+from src.configuration.config import WORKER_THREAD
 
 class ExtractNewsInfo:
     def __init__(self):
-        self.webdriver = WebDriverLoad()
+        self.load_browser = LoadBrowser()
+        self.browser = self.load_browser.browser
+
         self.excel_file = ExcelFile()
         self.save_directory = save_img_directory()
         self.selectors = selectors
 
-        self.wait1 = self.webdriver.wait1
-        self.wait2 = self.webdriver.wait2
-        self.wait3 = self.webdriver.wait3
-        self.driver = self.webdriver.driver
     def search_phrase(self, phrase):
         try:
-            search_main_page = self.wait2.until(
-                EC.presence_of_element_located((By.XPATH, self.selectors['search']['search_button_main']))
-            ).click()
-
-            search_field = self.wait2.until(
-                EC.presence_of_element_located((By.XPATH, self.selectors['search']['search_field']))
-            ).send_keys(phrase, Keys.ENTER)
-
-            search_button = self.wait2.until(
-                EC.presence_of_element_located((By.XPATH, self.selectors['search']['search_button']))
-            ).click()
+            self.browser.click_element(self.selectors['search']['search_button_main'])
+            
+            self.browser.wait_until_element_is_visible(self.selectors['search']['search_field'])
+            self.browser.input_text(self.selectors['search']['search_field'], phrase)
+            self.browser.press_keys(self.selectors['search']['search_field'], "ENTER")
 
             return phrase
 
@@ -44,31 +33,54 @@ class ExtractNewsInfo:
             print(e)
 
     def wait_load_news(self):
-        while True:
-            wait_load_phrase = self.driver.find_elements(By.XPATH, self.selectors['wait_loading']['wait_load_news'])
-            if wait_load_phrase:
-                break
+        self.browser.wait_until_element_is_visible(self.selectors['wait_loading']['wait_load_news'], timeout=20)
+
+    def scroll_to_element(self, element):
+        javascript_code = "arguments[0].scrollIntoView(true);"
+        self.browser.execute_javascript(javascript_code, element)        
+
+    def remove_newsletter(self):
+        try:
+            modal_newsletter = self.browser.find_element(self.selectors['close_newsletter']['remove_div_newsletter'])
+            if modal_newsletter:
+                modal_newsletter.remove()
+        except:
+            pass
 
     def load_more_news(self):
         while True:
             try:
-                load_more = self.wait1.until(
-                    EC.presence_of_element_located((By.XPATH, self.selectors['wait_loading']['button_load_all_news']))
-                )
+                self.remove_newsletter()
+                load_more = self.browser.find_element(self.selectors['wait_loading']['button_load_all_news'])
+                self.remove_newsletter()
 
                 if load_more:
-                    self.driver.execute_script("arguments[0].scrollIntoView(true); window.scrollBy(0, -80);", load_more)
-                load_more.click()
-            except:
-                self.driver.execute_script("window.scrollTo(0, 0);")
+
+                    get_element_class = load_more.get_attribute("class")
+                    get_first_element_class = get_element_class.split()
+                    load_more_class_selector = get_first_element_class[0]
+
+                    scroll_to_load_more = f"""
+                    var element = document.querySelector('.{load_more_class_selector}');
+                    if (element) {{
+                        element.scrollIntoView({{behavior: 'smooth', block: 'center'}});
+                        window.scrollBy(0, 0);
+                    }}
+                    """
+                    self.browser.execute_javascript(scroll_to_load_more)
+                    
+                    self.browser.wait_until_element_is_visible(self.selectors['wait_loading']['button_load_all_news'])
+                    load_more.click()
+            except Exception as e:
+                self.browser.execute_javascript("window.scrollTo(0, 0);")
                 break
 
     def extract_news_data(self, search_phrase):
         try:
-            titles = self.driver.find_elements(By.XPATH, self.selectors['card_news']['card_title'])
-            descriptions = self.driver.find_elements(By.XPATH, self.selectors['card_news']['card_description'])
-            picture_links = self.driver.find_elements(By.XPATH, self.selectors['card_news']['picture_link'])
-            article_links = self.driver.find_elements(By.XPATH, self.selectors['card_news']['link_article'])
+            titles = self.browser.find_elements(self.selectors['card_news']['card_title'])
+            descriptions = self.browser.find_elements(self.selectors['card_news']['card_description'])
+            picture_links = self.browser.find_elements(self.selectors['card_news']['picture_link'])
+            article_links = self.browser.find_elements(self.selectors['card_news']['link_article'])
 
             with ThreadPoolExecutor(max_workers=WORKER_THREAD) as executor:
                 futures = []

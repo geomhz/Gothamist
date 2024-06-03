@@ -13,3 +13,8 @@ card_news:
   card_description: "//*[@trackingcomponent='Search Results']//p"
   picture_link: "//*[@class='image-with-caption card-image w-full']//*[@class='image native-image prime-img-class']"
   link_article: "//*[@class='image-with-caption card-image w-full']//a"
+
+remove_newsletter:
+  remove_div_newsletter: "//*[@id='om-ufqvzhbsyqfusqjycx4a']"
+  # remove_div_newsletter: "//*[@id='om-ufqvzhbsyqfusqjycx4a-optin']//button[@title='Close']"
+  
